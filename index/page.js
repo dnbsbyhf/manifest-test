@@ -39,6 +39,18 @@ function Page(options,debug){
 
 }
 
+function checkResult(startTime,endTime){
+
+	var  lasting = parseInt(endTime-startTime) ;
+
+	if(typeof lasting == "number" && lasting >1000 && lasting<10000){
+		return lasting;
+	}else{
+		return false;
+	}
+
+}
+
 
 var STATUS = {
 	
@@ -57,15 +69,20 @@ Page.prototype.init = function(){
 	//准备前
 	self.fire(STATUS.BEFOREINIT);
 
-	page.open(self.url,function(status){
+	page.open(self.url,function(status){});	
 
-		dbg("页面已打开，正在加入hook");
+	page.onInitialized = function() {
 
-		self.regListener = self.filter.length || false;
+	    page.evaluate(function() {
+	    	window.onload = function(){
+	    		window.callPhantom(+new Date());
+	    	}
+	    });
+	};
 
-		self.regListener ? self.injectHook() : self.fire("success");
-
-	})
+	page.onLoadStarted = function() {
+	  	self.startTime = +new Date();
+	};
 
 	//回调
 	self._callback();
@@ -81,27 +98,9 @@ Page.prototype.init = function(){
 Page.prototype._callback = function(){
 	
 	var self = this;
-
 	this.page.onCallback = function(data) {
-
-		self.regListener--;
-
-	 	!self.regListener && (dbg("抓取结束!"),self.fire("success"));
-
+		(dbg("抓取结束!"),self.fire("success",checkResult(self.startTime,data)));
 	};
-
-}
-
-Page.prototype.injectHook = function(){
-
-	var self = this;
-
-	var item;
-
-	while(item = self.filter.pop()){
-		self.page.injectJs('./index/hook/'+item.replace(/(\.js)$/,"")+".js");
-	}
-
 }
 
 
@@ -138,7 +137,7 @@ Page.prototype.on = function(type,fn){
 
 
 
-Page.prototype.fire = function(type){
+Page.prototype.fire = function(type,data){
 	
 	var self = this;
 	
@@ -150,55 +149,12 @@ Page.prototype.fire = function(type){
 	    	
 	    	var item = params[index];
 
-	    	Util.isFunction(item) && (item.call(self,self.page));
+	    	Util.isFunction(item) && (item.call(self,self.page,data));
 	   
 	    }
 	 }
 }
 
-var DefalutOpt = {
-	limit:['css','img']
-}
-
-
-var UNLOAD = {
-	CSS:/(\.css)$/,
-	IMG:/\.(jpg|gif|bmp|bnp|png)$/
-}
-
-
-function noLoadLimitResourece(opt){
-	var self  = this;
-
-	dbg("开始下载资源");
-
-	self.opt = Util.mix(DefalutOpt,opt);
-
-	//禁止加载其他资源
-	self.on(STATUS.BEFOREINIT,function(page){
-
-		page.onResourceRequested = function(requestData, networkRequest) {
-				
-			var _limit = self.opt.limit || [];
-					
-			for(var index = 0;index <_limit.length ; index++){
-				
-				if(UNLOAD[_limit[index].toLocaleUpperCase()].test(requestData.url)){
-					networkRequest.abort();
-				}
-			}
-
-		};
-
-		page.onResourceReceived = function(response) {
-		     response.url ? dbg('正在加载' + response.url) : false;
-		};
-
-	
-	});
-}
-
-Page.prototype.limitLoad = noLoadLimitResourece;
 
 
 module.exports = Page;

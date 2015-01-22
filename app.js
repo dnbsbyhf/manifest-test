@@ -1,16 +1,12 @@
+var webserver = require('webserver');
+
+var server = webserver.create();
+
 var Page = require("./index/page");
 
 var __CONFIG__ = require("./config");
 
 var Util = require('./base/util');
-var system =require('system');
-
-var args = system.args;
-
-
-var targetUrl = args[1];
-
-var reg = __CONFIG__["filter"];
 
 // 一切为了微信
 phantom.addCookie({
@@ -23,30 +19,57 @@ phantom.addCookie({
   'expires'  : (new Date()).getTime() + (1000 * 60 * 60)
 });
 
-var page = new Page({url:targetUrl,filter:reg},__CONFIG__.debug);
 
-// 成功抓取回调
-page.on('success',function(page){
+var service = server.listen(__CONFIG__.port, function(req, res) {
 
-	console.log(page.content);
+
+  var query = Util.parse(req.url);
+
+  var reg = __CONFIG__["filter"];
+
+  console.log("开始抓页面:"+query.url)
+
+  var page = new Page({url:query.url,filter:reg},__CONFIG__.debug);
+
+  page.init();
+
+  page.on('success',function(page,time){
+
+    res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8' 
+    });
+
+    res.write(page.content);
+
+    console.log("成功抓取:"+query.url);
+
+    console.log("共耗时："+time);
+
+    clearTimeout(timer);
+
+    res.close();
+
+    phantom.exit(-1);
+    
+  });
+
+  //抓取延时
+  timer = setTimeout(function(){
+    console.log("抓取失败！原因：超时。");
+    
+    res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8' 
+    });
+
+    res.write("抓取失败。");
+    
+    res.close();    
 
     phantom.exit(-1);
 
+  },30000)
+  
 });
 
-//抓取失败
-timer = setTimeout(function(){
-	
-	console.error("出问题了啦");
 
-	phantom.exit(-1);
-
-},12000)
-
-
-
-page.limitLoad(__CONFIG__.limit)
-
-page.init();
-
-
+console.log("server start:"+__CONFIG__.port)
