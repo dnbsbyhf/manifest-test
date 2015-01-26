@@ -65,8 +65,10 @@ Page.prototype.init = function(){
 	  	self.startTime = +new Date();
 	};
 
-	
-	
+	page.onResourceRequested = function(response) {
+	  console.log("开始加载资源："+response.url);
+	};
+
 	//回调
 	self._callback();
 
