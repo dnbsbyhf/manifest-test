@@ -65,6 +65,8 @@ Page.prototype.init = function(){
 	  	self.startTime = +new Date();
 	};
 
+	
+	
 	//回调
 	self._callback();
 

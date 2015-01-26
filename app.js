@@ -9,7 +9,7 @@ var __CONFIG__ = require("./config");
 var Util = require('./base/util');
 
 
-var url = "http://www.baidu.com";
+var url = "http://192.168.7.94:2222/cache.html";
 
 var reg = __CONFIG__["filter"];
 

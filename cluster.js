@@ -11,12 +11,14 @@ var childProcess = require('child_process'),
     fs = require("fs");
     cluster = require('cluster');
 
-var numWks = 15;
+var numWks = 5;
+
+var filename = "cache.log";
 
 if (cluster.isMaster) {
     // 清空数据
     console.log("清空之前数据")
-    fs.writeFileSync(__dirname + '/log/baidu.log',"");
+    fs.writeFileSync(__dirname + '/log/'+filename,"");
 
     //创建集群
     for (var i = 0; i < numWks; i++) {
@@ -38,6 +40,6 @@ if (cluster.isMaster) {
         var data = parseInt(data);
         console.info(data);
         if(typeof data == "number")
-            fs.appendFileSync(__dirname + '/log/baidu.log',data+",");
+            fs.appendFileSync(__dirname + '/log/'+filename,data+",");
     });
 }

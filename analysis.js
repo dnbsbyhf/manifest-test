@@ -1,6 +1,6 @@
 var fs = require("fs");
 
-var cnt = fs.readFileSync(__dirname + '/log/baidu.log',{encoding:"UTF-8"}).split(",");
+var cnt = fs.readFileSync(__dirname + '/log/cache.log',{encoding:"UTF-8"}).split(",");
 
 cnt.splice(cnt.length-1,1);
 
