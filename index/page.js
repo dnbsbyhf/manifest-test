@@ -9,41 +9,22 @@ var _Cache = {};
 var _Debug = false;
 
 
-function _filter(url,reg){
-	var result = false;
-
-	if(url){
-		for(key in reg){
-			var ruler = new RegExp(key);
-			if(ruler.test(url)){
-				result = reg[key];
-				break;
-			}
-		}
-	}
-
-	return {url:url,filter:result}
-}
-
-
 function dbg(str){
 	_Debug ? console.log(str) : false;
 }
 
 
-function Page(options,debug){
+function Page(url,debug){
 	//初始化url匹配
-	Util.mix(this,_filter(options.url,options.filter));
-
+	this.url = url;
 	_Debug = debug;
 
 }
 
 function checkResult(startTime,endTime){
-
 	var  lasting = parseInt(endTime-startTime) ;
 
-	if(typeof lasting == "number" && lasting >1000 && lasting<10000){
+	if(typeof lasting == "number" && lasting > 0 && lasting<10000){
 		return lasting;
 	}else{
 		return false;
@@ -60,27 +41,27 @@ var STATUS = {
 }
 
 
+var _page;
+
 Page.prototype.init = function(){
 	
 	var self =  this;
 
-	var page = self.page = require('webpage').create();
+	var page = self.page = _page = _page || require('webpage').create();
 
 	//准备前
 	self.fire(STATUS.BEFOREINIT);
 
-	page.open(self.url,function(status){});	
-
 	page.onInitialized = function() {
-
+		dbg("注入js onload事件");
 	    page.evaluate(function() {
 	    	window.onload = function(){
 	    		window.callPhantom(+new Date());
 	    	}
 	    });
 	};
-
 	page.onLoadStarted = function() {
+		dbg("开始加载");
 	  	self.startTime = +new Date();
 	};
 
@@ -93,13 +74,21 @@ Page.prototype.init = function(){
 	//触发初始化后事件
 	self.fire(STATUS.AFTERBEFORE);
 
-}	
+}
+
+
+
+Page.prototype.done = function(){
+	var self = this;
+	self.page.open(self.url,function(status){});	
+}
 
 Page.prototype._callback = function(){
 	
 	var self = this;
-	this.page.onCallback = function(data) {
-		(dbg("抓取结束!"),self.fire("success",checkResult(self.startTime,data)));
+	self.page.onCallback = function(data) {
+		dbg("抓取结束!");
+		self.fire("success",checkResult(self.startTime,data));
 	};
 }
 

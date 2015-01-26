@@ -8,68 +8,48 @@ var __CONFIG__ = require("./config");
 
 var Util = require('./base/util');
 
-// 一切为了微信
-phantom.addCookie({
-  'name'     : 'test',   /* required property */
-  'value'    : '2332',  /* required property */
-  'domain'   : 'mm.dianping.com',           /* required property */
-  'path'     : '',
-  'httponly' : true,
-  'secure'   : false,
-  'expires'  : (new Date()).getTime() + (1000 * 60 * 60)
-});
+
+var url = "http://www.baidu.com";
+
+var reg = __CONFIG__["filter"];
+
+// console.log("开始抓页面:"+url);
+
+var platform = new Page(url,__CONFIG__.debug);
+
+var count = 1;
+var avg = 0;
 
 
-var service = server.listen(__CONFIG__.port, function(req, res) {
 
+var die = false;
 
-  var query = Util.parse(req.url);
+platform.on('success',function(_page,time){
+  if(time){
+      // console.log("成功抓取:"+url);
 
-  var reg = __CONFIG__["filter"];
+      // console.log((avg = (time-avg)/(count) + avg));
+      console.info(time);
 
-  console.log("开始抓页面:"+query.url)
+      // console.log("第"+count+"次抓取共耗时："+time+"  平均耗时："+(avg = (time-avg)/(count) + avg));
 
-  var page = new Page({url:query.url,filter:reg},__CONFIG__.debug);
+      count++; 
+  }
 
-  page.init();
-
-  page.on('success',function(page,time){
-
-    res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8' 
-    });
-
-    res.write(page.content);
-
-    console.log("成功抓取:"+query.url);
-
-    console.log("共耗时："+time);
-
-    clearTimeout(timer);
-
-    res.close();
-
-    phantom.exit(-1);
-    
-  });
-
-  //抓取延时
-  timer = setTimeout(function(){
-    console.log("抓取失败！原因：超时。");
-    
-    res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8' 
-    });
-
-    res.write("抓取失败。");
-    
-    res.close();    
-
-    phantom.exit(-1);
-
-  },30000)
+  platform.done();
   
+  die = false;
 });
 
+var _timer;
 
-console.log("server start:"+__CONFIG__.port)
+platform.init();
+
+platform.done();
+
+// 解决未回调问题
+setInterval(function(){
+  if(die)
+    platform.done();
+  die = true;
+},3000);
